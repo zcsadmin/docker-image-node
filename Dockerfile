@@ -3,7 +3,7 @@ ARG NODE_VERSION=22
 #
 # Base image
 #
-FROM node:${NODE_VERSION}-bookworm-slim AS base
+FROM node:${NODE_VERSION}-trixie-slim AS base
 
 ARG DOCKER_USER=bob
 ARG DOCKER_GROUP=bob
