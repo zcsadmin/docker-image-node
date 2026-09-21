@@ -1,25 +1,20 @@
 #!/bin/bash
 
-set -eux 
+PUSH="--push"
+
+set -eux
+
+VERSIONS=("$@")
+if [ ${#VERSIONS[@]} -eq 0 ]; then
+    VERSIONS=(24 22 20)
+fi
 
 docker buildx create --name container --driver=docker-container default || true
 
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target base --build-arg NODE_VERSION=20 -f Dockerfile -t zcscompany/node:20-base .
-
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target dev --build-arg NODE_VERSION=20 -f Dockerfile -t zcscompany/node:20-dev .
-
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target dist --build-arg NODE_VERSION=20 -f Dockerfile -t zcscompany/node:20-dist .
-
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target base --build-arg NODE_VERSION=22 -f Dockerfile -t zcscompany/node:22-base .
-
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target dev --build-arg NODE_VERSION=22 -f Dockerfile -t zcscompany/node:22-dev .
-
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target dist --build-arg NODE_VERSION=22 -f Dockerfile -t zcscompany/node:22-dist .
-
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target base --build-arg NODE_VERSION=24 -f Dockerfile -t zcscompany/node:24-base .
-
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target dev --build-arg NODE_VERSION=24 -f Dockerfile -t zcscompany/node:24-dev .
-
-docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull --push --target dist --build-arg NODE_VERSION=24 -f Dockerfile -t zcscompany/node:24-dist .
+for v in "${VERSIONS[@]}"; do
+    docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull ${PUSH} --target base --build-arg NODE_VERSION=${v} -f Dockerfile -t zcscompany/node:${v}-base .
+    docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull ${PUSH} --target dev --build-arg NODE_VERSION=${v} -f Dockerfile -t zcscompany/node:${v}-dev .
+    docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=true --builder=container --pull ${PUSH} --target dist --build-arg NODE_VERSION=${v} -f Dockerfile -t zcscompany/node:${v}-dist .
+done
 
 docker buildx stop container

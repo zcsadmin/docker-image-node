@@ -1,0 +1,83 @@
+name: Rebuild Node 22 On Upstream Update
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-if-upstream-changed:
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+      - name: Read latest upstream digest
+        id: latest
+        run: |
+          set -euo pipefail
+          digest_node_22="$(skopeo inspect --format '{{.Digest}}' docker://node:22-trixie-slim)"
+          echo "digest_node_22=${digest_node_22}" >> "$GITHUB_OUTPUT"
+
+      - name: Read stored digest
+        id: stored
+        run: |
+          set -euo pipefail
+          file_node_22=".github/state/node-22-trixie-slim.digest"
+          if [ -f "$file_node_22" ]; then
+            echo "digest_node_22=$(cat "$file_node_22")" >> "$GITHUB_OUTPUT"
+          else
+            echo "digest_node_22=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Print digest comparison
+        run: |
+          echo "node:22-trixie-slim latest: ${{ steps.latest.outputs.digest_node_22 }}"
+          echo "node:22-trixie-slim stored: ${{ steps.stored.outputs.digest_node_22 }}"
+
+      - name: Compare digests
+        id: compare
+        run: |
+          set -euo pipefail
+          changed=false
+          if [ "${{ steps.latest.outputs.digest_node_22 }}" != "${{ steps.stored.outputs.digest_node_22 }}" ]; then
+            changed=true
+          fi
+          echo "changed=${changed}" >> "$GITHUB_OUTPUT"
+
+      - name: Login to Docker Hub
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build and push Node 22 images
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          bash ./build-and-push.sh 22
+
+      - name: Persist latest digest
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p .github/state
+          echo "${{ steps.latest.outputs.digest_node_22 }}" > .github/state/node-22-trixie-slim.digest
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/state/node-22-trixie-slim.digest
+          git commit -m "chore: track upstream node base image digests" || exit 0
+          git push
+
+      - name: Skip build when unchanged
+        if: steps.compare.outputs.changed == 'false'
+        run: echo "Upstream node:22-trixie-slim digest unchanged. Skipping build."

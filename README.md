@@ -43,7 +43,9 @@ docker build --pull --target dist --build-arg NODE_VERSION=20 -t zcscompany/node
 
 ## Release
 
-`./build-and-push.sh` builds and pushes all supported versions (`Node 20/22/24`) for `linux/amd64` and `linux/arm64` to Docker Hub. It requires `docker login`.
+`./build-and-push.sh` builds and pushes all supported versions (`Node 20/22/24`) for `linux/amd64` and `linux/arm64` to Docker Hub. It requires `docker login`. Use `./build-and-push.sh <20|22|24>` to release a single version's 3 tags.
+
+The images are also rebuilt and pushed automatically by CI whenever the upstream `node:*-trixie-slim` base images change.
 
 ## Docker hub repository
 
