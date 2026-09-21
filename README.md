@@ -11,6 +11,8 @@ ZCS Node docker images come in three flavours:
 Supported Node versions:
 
  - `Node 20`
+ - `Node 22`
+ - `Node 24`
 
 Supported platforms:
 
@@ -19,23 +21,29 @@ Supported platforms:
 
 ## Build images
 
+The tag suffix must match the `--build-arg NODE_VERSION` (e.g. use `NODE_VERSION=20` for `:20-*` tags).
+
 ### Base image
 
 ```bash
-docker build --pull --target base -t zcscompany/node:20-base .
+docker build --pull --target base --build-arg NODE_VERSION=20 -t zcscompany/node:20-base .
 ```
 
 ### Dev image
 
 ```bash
-docker build --pull --target dev -t zcscompany/node:20-dev .
+docker build --pull --target dev --build-arg NODE_VERSION=20 -t zcscompany/node:20-dev .
 ```
 
 ### Dist image
 
 ```bash
-docker build --pull --target dist -t zcscompany/node:20-dist .
+docker build --pull --target dist --build-arg NODE_VERSION=20 -t zcscompany/node:20-dist .
 ```
+
+## Release
+
+`./build-and-push.sh` builds and pushes all supported versions (`Node 20/22/24`) for `linux/amd64` and `linux/arm64` to Docker Hub. It requires `docker login`.
 
 ## Docker hub repository
 
